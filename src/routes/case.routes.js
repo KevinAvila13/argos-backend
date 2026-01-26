@@ -8,22 +8,26 @@ import {
   submitCaseForReview,
   reviewCase
 } from '../controllers/case.controller.js';
+import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-// GET endpoints
-router.get('/', getCases);           // Get all cases with filters
-router.get('/:id', getCaseById);     // Get single case by ID
+// All routes require authentication
+router.use(authenticate);
 
-// POST endpoints
-router.post('/', createCaseFile);            // Create new case
-router.post('/submit', submitCaseForReview); // Submit for review
-router.post('/review', reviewCase);          // Approve/reject case
+// GET endpoints - All authenticated users can view
+router.get('/', getCases);
+router.get('/:id', getCaseById);
 
-// PUT endpoints
-router.put('/:id', updateCase);      // Update case (draft only)
+// POST endpoints - Technicians and admins can create/submit
+router.post('/', authorize('technician', 'admin'), createCaseFile);
+router.post('/submit', authorize('technician', 'admin'), submitCaseForReview);
 
-// DELETE endpoints
-router.delete('/:id', deleteCase);   // Delete case (draft only)
+// Coordinators and admins can review
+router.post('/review', authorize('coordinator', 'admin'), reviewCase);
+
+// PUT/DELETE - Technicians and admins can modify draft cases
+router.put('/:id', authorize('technician', 'admin'), updateCase);
+router.delete('/:id', authorize('technician', 'admin'), deleteCase);
 
 export default router;

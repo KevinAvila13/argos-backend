@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import authRoutes from './routes/auth.routes.js';
 import caseRoutes from './routes/case.routes.js';
 import evidenceRoutes from './routes/evidence.routes.js';
 import reportRoutes from './routes/report.routes.js';
@@ -10,6 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/cases', caseRoutes);
 app.use('/api/evidence', evidenceRoutes);
 app.use('/api/reports', reportRoutes);

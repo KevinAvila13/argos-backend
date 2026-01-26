@@ -6,20 +6,20 @@ import {
   updateEvidence,
   deleteEvidence
 } from '../controllers/evidence.controller.js';
+import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-// GET endpoints
-router.get('/case/:caseId', getEvidenceByCase);  // Get all evidence for a case
-router.get('/:id', getEvidenceById);              // Get single evidence by ID
+// All routes require authentication
+router.use(authenticate);
 
-// POST endpoints
-router.post('/', addEvidenceItem);                // Add new evidence item
+// GET endpoints - All authenticated users can view
+router.get('/case/:caseId', getEvidenceByCase);
+router.get('/:id', getEvidenceById);
 
-// PUT endpoints
-router.put('/:id', updateEvidence);               // Update evidence (draft only)
-
-// DELETE endpoints
-router.delete('/:id', deleteEvidence);            // Delete evidence (draft only)
+// POST/PUT/DELETE - Technicians and admins only
+router.post('/', authorize('technician', 'admin'), addEvidenceItem);
+router.put('/:id', authorize('technician', 'admin'), updateEvidence);
+router.delete('/:id', authorize('technician', 'admin'), deleteEvidence);
 
 export default router;

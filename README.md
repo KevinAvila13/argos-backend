@@ -7,7 +7,8 @@ Backend API for the Argos Forensic Evidence Management System. Built with Node.j
 - RESTful API for case file management
 - Evidence item tracking (indicios)
 - Workflow management (draft → review → approval/rejection)
-- Role-based access control (technician, coordinator, admin)
+- JWT authentication with role-based access control
+- User roles: technician, coordinator, admin
 - PostgreSQL stored procedures for business logic
 - Comprehensive data validation
 
@@ -16,6 +17,7 @@ Backend API for the Argos Forensic Evidence Management System. Built with Node.j
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: PostgreSQL
+- **Authentication**: JWT (jsonwebtoken) + bcrypt
 - **Architecture**: MVC pattern with service layer
 
 ## Project Structure
@@ -25,18 +27,24 @@ argos-backend/
 ├── database/
 │   ├── schema.sql                      # Database tables and structure
 │   ├── stored_procedures/              # PostgreSQL stored procedures
-│   ├── seed_data.sql                   # Sample test data
+│   │   ├── case_procedures.sql         # Case management procedures
+│   │   ├── evidence_procedures.sql     # Evidence management procedures
+│   │   ├── report_procedures.sql       # Reports and statistics
+│   │   └── auth_procedures.sql         # Authentication procedures
+│   ├── seed_data.sql                   # Sample test data with users
 │   ├── setup.sh                        # Automated setup script
 │   └── README.md                       # Database documentation
 ├── src/
 │   ├── config/
 │   │   └── db.js                       # Database connection config
 │   ├── controllers/                    # Request handlers
+│   ├── middleware/                     # Express middleware
+│   │   └── auth.middleware.js          # JWT authentication & authorization
 │   ├── routes/                         # API route definitions
 │   └── services/                       # Business logic layer
 ├── docs/
 │   ├── CONTEXT.md                      # Project requirements
-│   ├── API_EXAMPLES.md                 # API usage examples
+│   ├── API_EXAMPLES.md                 # Complete API documentation
 │   └── DATABASE_SETUP_COMPLETE.md      # Database documentation
 ├── .env.example                        # Environment variables template
 ├── index.js                            # Application entry point
@@ -82,6 +90,8 @@ psql -U postgres -c "CREATE DATABASE argos_db;"
 psql -U postgres -d argos_db -f database/schema.sql
 psql -U postgres -d argos_db -f database/stored_procedures/case_procedures.sql
 psql -U postgres -d argos_db -f database/stored_procedures/evidence_procedures.sql
+psql -U postgres -d argos_db -f database/stored_procedures/report_procedures.sql
+psql -U postgres -d argos_db -f database/stored_procedures/auth_procedures.sql
 psql -U postgres -d argos_db -f database/seed_data.sql
 ```
 
@@ -94,16 +104,37 @@ The API will be available at `http://localhost:3000`
 
 ## API Endpoints
 
+### Authentication
+- `POST /api/auth/login` - Login and get JWT token
+- `POST /api/auth/register` - Register new user
+- `GET /api/auth/profile` - Get current user profile
+- `PUT /api/auth/change-password` - Change password
+- `GET /api/auth/users` - List all users (admin only)
+
 ### Cases
 - `GET /api/cases` - Get all cases (with optional filters)
-- `POST /api/cases` - Create a new case
-- `POST /api/cases/submit` - Submit case for review
-- `POST /api/cases/review` - Review and approve/reject case
+- `GET /api/cases/:id` - Get case by ID
+- `POST /api/cases` - Create a new case (technician)
+- `PUT /api/cases/:id` - Update case (draft only)
+- `DELETE /api/cases/:id` - Delete case (draft only)
+- `POST /api/cases/submit` - Submit case for review (technician)
+- `POST /api/cases/review` - Review and approve/reject case (coordinator)
 
 ### Evidence
-- `POST /api/evidence` - Add evidence item to a case
+- `GET /api/evidence/case/:caseId` - Get all evidence for a case
+- `GET /api/evidence/:id` - Get evidence by ID
+- `POST /api/evidence` - Add evidence item (technician)
+- `PUT /api/evidence/:id` - Update evidence (draft only)
+- `DELETE /api/evidence/:id` - Delete evidence (draft only)
 
-See [docs/API_EXAMPLES.md](docs/API_EXAMPLES.md) for detailed usage examples.
+### Reports
+- `GET /api/reports/summary` - Overall statistics
+- `GET /api/reports/by-status` - Cases grouped by status
+- `GET /api/reports/by-date` - Daily activity report
+- `GET /api/reports/rejections` - Rejected cases details
+- `GET /api/reports/by-technician` - Technician performance
+
+See [docs/API_EXAMPLES.md](docs/API_EXAMPLES.md) for detailed usage examples with authentication.
 
 ## Database
 
@@ -130,14 +161,28 @@ npm run dev
 Use curl, Postman, or any HTTP client. Examples:
 
 ```bash
-# Get all cases
-curl http://localhost:3000/api/cases
+# Login to get JWT token
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"tech01","password":"Password123!"}'
+
+# Use the token in subsequent requests
+curl http://localhost:3000/api/cases \
+  -H "Authorization: Bearer <your_token>"
 
 # Create a new case
 curl -X POST http://localhost:3000/api/cases \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_token>" \
   -d '{"title":"Test Case","description":"Testing","technician_id":1}'
 ```
+
+### Test Users (from seed data)
+| Username | Password | Role |
+|----------|----------|------|
+| tech01 | Password123! | technician |
+| coord01 | Password123! | coordinator |
+| admin | Password123! | admin |
 
 ## Project Status
 
@@ -150,7 +195,8 @@ This is a portfolio project demonstrating:
 
 ## Future Enhancements
 
-- [ ] JWT authentication
+- [x] JWT authentication
+- [x] Role-based access control
 - [ ] Unit tests (Jest)
 - [ ] E2E tests (Playwright)
 - [ ] Docker containerization

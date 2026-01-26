@@ -21,21 +21,21 @@ ALTER SEQUENCE evidence_items_evidence_id_seq RESTART WITH 1;
 -- =============================================
 -- Insert Users (technicians and coordinators)
 -- Password for all test users: "Password123!"
--- Hash generated with bcrypt (you'll need to replace these in production)
+-- Hash generated with bcrypt (cost factor: 10)
 -- =============================================
 
 INSERT INTO users (username, email, password_hash, full_name, role, is_active) VALUES
-  -- Technicians
-  ('tech01', 'john.tech@argos.com', '$2b$10$abcdefghijklmnopqrstuvwxyz123456789', 'John Technician', 'technician', TRUE),
-  ('tech02', 'maria.tech@argos.com', '$2b$10$abcdefghijklmnopqrstuvwxyz123456789', 'Maria Rodriguez', 'technician', TRUE),
-  ('tech03', 'carlos.tech@argos.com', '$2b$10$abcdefghijklmnopqrstuvwxyz123456789', 'Carlos Martinez', 'technician', TRUE),
+  -- Technicians (Password: Password123!)
+  ('tech01', 'john.tech@argos.com', '$2b$10$ABhpyPOrgQpbmSETjWyLnOvY38W1tmgxyL3.ZuLMMri/T/t6OmOv.', 'John Technician', 'technician', TRUE),
+  ('tech02', 'maria.tech@argos.com', '$2b$10$ABhpyPOrgQpbmSETjWyLnOvY38W1tmgxyL3.ZuLMMri/T/t6OmOv.', 'Maria Rodriguez', 'technician', TRUE),
+  ('tech03', 'carlos.tech@argos.com', '$2b$10$ABhpyPOrgQpbmSETjWyLnOvY38W1tmgxyL3.ZuLMMri/T/t6OmOv.', 'Carlos Martinez', 'technician', TRUE),
 
-  -- Coordinators
-  ('coord01', 'jane.coord@argos.com', '$2b$10$abcdefghijklmnopqrstuvwxyz123456789', 'Jane Coordinator', 'coordinator', TRUE),
-  ('coord02', 'robert.coord@argos.com', '$2b$10$abcdefghijklmnopqrstuvwxyz123456789', 'Robert Johnson', 'coordinator', TRUE),
+  -- Coordinators (Password: Password123!)
+  ('coord01', 'jane.coord@argos.com', '$2b$10$ABhpyPOrgQpbmSETjWyLnOvY38W1tmgxyL3.ZuLMMri/T/t6OmOv.', 'Jane Coordinator', 'coordinator', TRUE),
+  ('coord02', 'robert.coord@argos.com', '$2b$10$ABhpyPOrgQpbmSETjWyLnOvY38W1tmgxyL3.ZuLMMri/T/t6OmOv.', 'Robert Johnson', 'coordinator', TRUE),
 
-  -- Admin
-  ('admin', 'admin@argos.com', '$2b$10$abcdefghijklmnopqrstuvwxyz123456789', 'System Administrator', 'admin', TRUE);
+  -- Admin (Password: Password123!)
+  ('admin', 'admin@argos.com', '$2b$10$ABhpyPOrgQpbmSETjWyLnOvY38W1tmgxyL3.ZuLMMri/T/t6OmOv.', 'System Administrator', 'admin', TRUE);
 
 -- =============================================
 -- Insert Sample Cases
@@ -116,5 +116,5 @@ BEGIN
   RAISE NOTICE '   Coordinator: coord01 / Password123!';
   RAISE NOTICE '   Admin: admin / Password123!';
   RAISE NOTICE '';
-  RAISE NOTICE '📝 Note: Password hashes are placeholders. Implement proper bcrypt hashing in your auth system.';
+  RAISE NOTICE '📝 Password hashes generated with bcrypt (cost factor: 10)';
 END $$;
