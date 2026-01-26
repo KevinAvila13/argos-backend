@@ -252,6 +252,153 @@ COMMENT ON FUNCTION sp_get_evidence_item IS 'Retrieves a single evidence item by
 
 
 -- =============================================
+-- Procedure: sp_update_evidence_item
+-- Description: Updates an evidence item (only if case is in draft status)
+--
+-- What it does:
+--   1. Validates the evidence item exists
+--   2. Validates the associated case is in 'draft' status
+--   3. Updates the provided fields
+--   4. Returns the evidence_id
+--
+-- Parameters:
+--   p_evidence_id: ID of the evidence item to update
+--   p_description: New description (optional)
+--   p_color: New color (optional)
+--   p_size: New size (optional)
+--   p_weight: New weight (optional)
+--   p_location: New location (optional)
+--
+-- Returns: INTEGER (evidence_id)
+--
+-- Business Rules:
+--   - Can only update evidence for cases in 'draft' status
+--   - At least one field must be provided
+--
+-- Example usage:
+--   SELECT sp_update_evidence_item(1, 'Updated description', 'Red', NULL, NULL, NULL);
+-- =============================================
+CREATE OR REPLACE FUNCTION sp_update_evidence_item(
+  p_evidence_id INTEGER,
+  p_description TEXT,
+  p_color VARCHAR(100),
+  p_size VARCHAR(100),
+  p_weight VARCHAR(100),
+  p_location TEXT
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_case_id INTEGER;
+  v_case_status VARCHAR(50);
+BEGIN
+  -- Get the case_id for this evidence item
+  SELECT case_id INTO v_case_id
+  FROM evidence_items
+  WHERE evidence_id = p_evidence_id;
+
+  IF v_case_id IS NULL THEN
+    RAISE EXCEPTION 'Evidence item with ID % does not exist', p_evidence_id;
+  END IF;
+
+  -- Check if the case is in draft status
+  SELECT status INTO v_case_status
+  FROM cases
+  WHERE case_id = v_case_id;
+
+  IF v_case_status != 'draft' THEN
+    RAISE EXCEPTION 'Cannot update evidence for a case that is not in draft status. Current status: %', v_case_status;
+  END IF;
+
+  -- Validate: Description cannot be empty if provided
+  IF p_description IS NOT NULL AND TRIM(p_description) = '' THEN
+    RAISE EXCEPTION 'Evidence description cannot be empty';
+  END IF;
+
+  -- Update evidence item (only update fields that are not NULL)
+  UPDATE evidence_items
+  SET
+    description = COALESCE(p_description, description),
+    color = COALESCE(p_color, color),
+    size = COALESCE(p_size, size),
+    weight = COALESCE(p_weight, weight),
+    location = COALESCE(p_location, location),
+    updated_at = CURRENT_TIMESTAMP
+  WHERE evidence_id = p_evidence_id;
+
+  RETURN p_evidence_id;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE EXCEPTION 'Error updating evidence item: %', SQLERRM;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION sp_update_evidence_item IS 'Updates an evidence item. Only works for cases in draft status.';
+
+
+-- =============================================
+-- Procedure: sp_delete_evidence_item
+-- Description: Deletes an evidence item (only if case is in draft status)
+--
+-- What it does:
+--   1. Validates the evidence item exists
+--   2. Validates the associated case is in 'draft' status
+--   3. Deletes the evidence item
+--   4. Returns the deleted evidence_id
+--
+-- Parameters:
+--   p_evidence_id: ID of the evidence item to delete
+--
+-- Returns: INTEGER (deleted evidence_id)
+--
+-- Business Rules:
+--   - Can only delete evidence for cases in 'draft' status
+--   - Once a case is submitted, evidence cannot be deleted
+--
+-- Example usage:
+--   SELECT sp_delete_evidence_item(1);
+-- =============================================
+CREATE OR REPLACE FUNCTION sp_delete_evidence_item(
+  p_evidence_id INTEGER
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_case_id INTEGER;
+  v_case_status VARCHAR(50);
+BEGIN
+  -- Get the case_id for this evidence item
+  SELECT case_id INTO v_case_id
+  FROM evidence_items
+  WHERE evidence_id = p_evidence_id;
+
+  IF v_case_id IS NULL THEN
+    RAISE EXCEPTION 'Evidence item with ID % does not exist', p_evidence_id;
+  END IF;
+
+  -- Check if the case is in draft status
+  SELECT status INTO v_case_status
+  FROM cases
+  WHERE case_id = v_case_id;
+
+  IF v_case_status != 'draft' THEN
+    RAISE EXCEPTION 'Cannot delete evidence for a case that is not in draft status. Current status: %', v_case_status;
+  END IF;
+
+  -- Delete evidence item
+  DELETE FROM evidence_items WHERE evidence_id = p_evidence_id;
+
+  RETURN p_evidence_id;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE EXCEPTION 'Error deleting evidence item: %', SQLERRM;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION sp_delete_evidence_item IS 'Deletes an evidence item. Only works for cases in draft status.';
+
+
+-- =============================================
 -- Success message
 -- =============================================
 DO $$
@@ -261,4 +408,6 @@ BEGIN
   RAISE NOTICE '   - sp_add_evidence_item';
   RAISE NOTICE '   - sp_get_evidence_by_case';
   RAISE NOTICE '   - sp_get_evidence_item';
+  RAISE NOTICE '   - sp_update_evidence_item';
+  RAISE NOTICE '   - sp_delete_evidence_item';
 END $$;

@@ -65,3 +65,56 @@ export const reviewCaseService = async ({
 
   return resultQuery.rows[0].case_id;
 };
+
+/**
+ * Get a single case by ID
+ * @param {number} case_id - The case ID to retrieve
+ * @returns {Object} Case details with technician/coordinator names and evidence count
+ */
+export const getCaseByIdService = async (case_id) => {
+  const query = `
+    SELECT * FROM sp_get_case_by_id($1);
+  `;
+
+  const result = await pool.query(query, [case_id]);
+
+  if (result.rows.length === 0) {
+    throw new Error(`Case with ID ${case_id} does not exist`);
+  }
+
+  return result.rows[0];
+};
+
+/**
+ * Update a case file (only draft status)
+ * @param {number} case_id - The case ID to update
+ * @param {string} title - New title (optional)
+ * @param {string} description - New description (optional)
+ * @returns {number} Updated case ID
+ */
+export const updateCaseService = async (case_id, title, description) => {
+  const query = `
+    SELECT sp_update_case($1, $2, $3) AS case_id;
+  `;
+
+  const values = [case_id, title || null, description || null];
+
+  const result = await pool.query(query, values);
+
+  return result.rows[0].case_id;
+};
+
+/**
+ * Delete a case file (only draft status)
+ * @param {number} case_id - The case ID to delete
+ * @returns {number} Deleted case ID
+ */
+export const deleteCaseService = async (case_id) => {
+  const query = `
+    SELECT sp_delete_case($1) AS case_id;
+  `;
+
+  const result = await pool.query(query, [case_id]);
+
+  return result.rows[0].case_id;
+};

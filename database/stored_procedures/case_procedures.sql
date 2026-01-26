@@ -336,6 +336,214 @@ COMMENT ON FUNCTION sp_get_cases IS 'Retrieves all cases with optional filters f
 
 
 -- =============================================
+-- Procedure: sp_get_case_by_id
+-- Description: Retrieves a single case by ID with full details
+--
+-- What it does:
+--   1. Fetches a specific case by its ID
+--   2. Joins with users table to get technician and coordinator names
+--   3. Includes evidence count for the case
+--   4. Returns complete case information
+--
+-- Parameters:
+--   p_case_id: ID of the case to retrieve
+--
+-- Returns: Table with single case information
+--
+-- Example usage:
+--   SELECT * FROM sp_get_case_by_id(1);
+-- =============================================
+CREATE OR REPLACE FUNCTION sp_get_case_by_id(
+  p_case_id INTEGER
+)
+RETURNS TABLE (
+  case_id INTEGER,
+  title VARCHAR(255),
+  description TEXT,
+  status VARCHAR(50),
+  technician_id INTEGER,
+  technician_name VARCHAR(255),
+  coordinator_id INTEGER,
+  coordinator_name VARCHAR(255),
+  review_result VARCHAR(50),
+  rejection_justification TEXT,
+  evidence_count BIGINT,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP,
+  submitted_at TIMESTAMP,
+  reviewed_at TIMESTAMP
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    c.case_id,
+    c.title,
+    c.description,
+    c.status,
+    c.technician_id,
+    t.full_name AS technician_name,
+    c.coordinator_id,
+    coord.full_name AS coordinator_name,
+    c.review_result,
+    c.rejection_justification,
+    (SELECT COUNT(*) FROM evidence_items e WHERE e.case_id = c.case_id) AS evidence_count,
+    c.created_at,
+    c.updated_at,
+    c.submitted_at,
+    c.reviewed_at
+  FROM
+    cases c
+  LEFT JOIN
+    users t ON c.technician_id = t.user_id
+  LEFT JOIN
+    users coord ON c.coordinator_id = coord.user_id
+  WHERE
+    c.case_id = p_case_id;
+
+  -- Check if case was found
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Case with ID % does not exist', p_case_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION sp_get_case_by_id IS 'Retrieves a single case by ID with technician/coordinator names and evidence count.';
+
+
+-- =============================================
+-- Procedure: sp_update_case
+-- Description: Updates a case file (only if in draft status)
+--
+-- What it does:
+--   1. Validates the case exists and is in 'draft' status
+--   2. Updates title and/or description
+--   3. Returns the updated case_id
+--
+-- Parameters:
+--   p_case_id: ID of the case to update
+--   p_title: New title (optional, keeps current if NULL)
+--   p_description: New description (optional, keeps current if NULL)
+--
+-- Returns: INTEGER (case_id)
+--
+-- Business Rules:
+--   - Can only update cases in 'draft' status
+--   - Once submitted for review, cases cannot be edited
+--
+-- Example usage:
+--   SELECT sp_update_case(1, 'Updated Title', 'Updated description');
+-- =============================================
+CREATE OR REPLACE FUNCTION sp_update_case(
+  p_case_id INTEGER,
+  p_title VARCHAR(255),
+  p_description TEXT
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_current_status VARCHAR(50);
+BEGIN
+  -- Validate: Check if case exists and get current status
+  SELECT status INTO v_current_status
+  FROM cases
+  WHERE case_id = p_case_id;
+
+  IF v_current_status IS NULL THEN
+    RAISE EXCEPTION 'Case with ID % does not exist', p_case_id;
+  END IF;
+
+  -- Validate: Case must be in draft status to edit
+  IF v_current_status != 'draft' THEN
+    RAISE EXCEPTION 'Can only update cases in draft status. Current status: %', v_current_status;
+  END IF;
+
+  -- Validate: At least one field must be provided
+  IF p_title IS NULL AND p_description IS NULL THEN
+    RAISE EXCEPTION 'At least one field (title or description) must be provided for update';
+  END IF;
+
+  -- Validate: Title cannot be empty if provided
+  IF p_title IS NOT NULL AND TRIM(p_title) = '' THEN
+    RAISE EXCEPTION 'Case title cannot be empty';
+  END IF;
+
+  -- Update case (only update fields that are not NULL)
+  UPDATE cases
+  SET
+    title = COALESCE(p_title, title),
+    description = COALESCE(p_description, description),
+    updated_at = CURRENT_TIMESTAMP
+  WHERE case_id = p_case_id;
+
+  RETURN p_case_id;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE EXCEPTION 'Error updating case: %', SQLERRM;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION sp_update_case IS 'Updates a case file. Only works for cases in draft status.';
+
+
+-- =============================================
+-- Procedure: sp_delete_case
+-- Description: Deletes a case file (only if in draft status)
+--
+-- What it does:
+--   1. Validates the case exists and is in 'draft' status
+--   2. Deletes all associated evidence items (CASCADE)
+--   3. Deletes the case
+--   4. Returns the deleted case_id
+--
+-- Parameters:
+--   p_case_id: ID of the case to delete
+--
+-- Returns: INTEGER (deleted case_id)
+--
+-- Business Rules:
+--   - Can only delete cases in 'draft' status
+--   - Deleting a case also deletes all its evidence items
+--   - Submitted or reviewed cases cannot be deleted
+--
+-- Example usage:
+--   SELECT sp_delete_case(1);
+-- =============================================
+CREATE OR REPLACE FUNCTION sp_delete_case(
+  p_case_id INTEGER
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_current_status VARCHAR(50);
+BEGIN
+  -- Validate: Check if case exists and get current status
+  SELECT status INTO v_current_status
+  FROM cases
+  WHERE case_id = p_case_id;
+
+  IF v_current_status IS NULL THEN
+    RAISE EXCEPTION 'Case with ID % does not exist', p_case_id;
+  END IF;
+
+  -- Validate: Case must be in draft status to delete
+  IF v_current_status != 'draft' THEN
+    RAISE EXCEPTION 'Can only delete cases in draft status. Current status: %', v_current_status;
+  END IF;
+
+  -- Delete case (evidence_items will be deleted via CASCADE)
+  DELETE FROM cases WHERE case_id = p_case_id;
+
+  RETURN p_case_id;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE EXCEPTION 'Error deleting case: %', SQLERRM;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION sp_delete_case IS 'Deletes a case and its evidence. Only works for cases in draft status.';
+
+
+-- =============================================
 -- Success message
 -- =============================================
 DO $$

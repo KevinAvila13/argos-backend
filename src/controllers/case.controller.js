@@ -1,4 +1,10 @@
-import { createCaseFileService, getCasesService } from '../services/case.service.js';
+import {
+  createCaseFileService,
+  getCasesService,
+  getCaseByIdService,
+  updateCaseService,
+  deleteCaseService
+} from '../services/case.service.js';
 
 /**
  * Get all cases with optional filters
@@ -78,6 +84,81 @@ export const reviewCase = async (req, res) => {
 
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+};
+
+/**
+ * Get a single case by ID
+ * Route: GET /api/cases/:id
+ */
+export const getCaseById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const caseData = await getCaseByIdService(parseInt(id));
+
+    res.status(200).json({
+      success: true,
+      data: caseData
+    });
+
+  } catch (error) {
+    const statusCode = error.message.includes('does not exist') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update a case file (only draft status)
+ * Route: PUT /api/cases/:id
+ */
+export const updateCase = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description } = req.body;
+
+    const updatedCaseId = await updateCaseService(parseInt(id), title, description);
+
+    res.status(200).json({
+      success: true,
+      message: 'Case updated successfully',
+      case_id: updatedCaseId
+    });
+
+  } catch (error) {
+    const statusCode = error.message.includes('does not exist') ? 404 : 400;
+    res.status(statusCode).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete a case file (only draft status)
+ * Route: DELETE /api/cases/:id
+ */
+export const deleteCase = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedCaseId = await deleteCaseService(parseInt(id));
+
+    res.status(200).json({
+      success: true,
+      message: 'Case deleted successfully',
+      case_id: deletedCaseId
+    });
+
+  } catch (error) {
+    const statusCode = error.message.includes('does not exist') ? 404 : 400;
+    res.status(statusCode).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
