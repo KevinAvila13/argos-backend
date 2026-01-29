@@ -17,7 +17,7 @@ jobs:
           - 5432:5432
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: 1289
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: argos_test
         options: >-
           --health-cmd="pg_isready -U postgres"
