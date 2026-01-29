@@ -47,6 +47,9 @@ jobs:
           echo "DB_PORT=5432" >> .env
           echo "JWT_SECRET=testsecret123" >> .env
 
+      - name: Seed test database
+        run: psql postgresql://postgres:postgres@localhost:5432/argos_test -f datebase/seed_data.sql
+
       - name: Run Jest tests
         run: npm test
 
