@@ -35,6 +35,8 @@ desktop.ini
 # Testing
 coverage/
 .nyc_output/
+playwright-report/
+test-results/
 
 # Build output
 dist/

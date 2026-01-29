@@ -150,6 +150,44 @@ The application uses PostgreSQL with stored procedures for business logic:
 
 See [database/README.md](database/README.md) for complete database documentation.
 
+## Testing
+
+### Unit Tests (Jest)
+```bash
+# Run all unit tests
+npm run test:unit
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
+```
+
+### E2E Tests (Playwright)
+```bash
+# Run E2E tests (requires server running or starts automatically)
+npm run test:e2e
+
+# Run all tests
+npm test
+```
+
+### Test Structure
+```
+tests/
+├── unit/                    # Unit tests with mocked dependencies
+│   ├── auth.service.test.js
+│   ├── auth.middleware.test.js
+│   ├── auth.controller.test.js
+│   └── cases.controller.test.js
+├── e2e/                     # End-to-end API tests
+│   ├── auth.spec.js
+│   ├── case-workflow.spec.js
+│   └── reports.spec.js
+└── setup.js                 # Jest setup configuration
+```
+
 ## Development
 
 ### Running in Development Mode
@@ -157,7 +195,7 @@ See [database/README.md](database/README.md) for complete database documentation
 npm run dev
 ```
 
-### Testing the API
+### Manual API Testing
 Use curl, Postman, or any HTTP client. Examples:
 
 ```bash
@@ -189,16 +227,19 @@ curl -X POST http://localhost:3000/api/cases \
 This is a portfolio project demonstrating:
 - RESTful API design
 - PostgreSQL database design with stored procedures
-- MVC architecture
+- MVC architecture with service layer
+- JWT authentication with role-based access control
 - Business logic validation
+- Unit testing with Jest
+- E2E testing with Playwright
 - Professional code structure and documentation
 
 ## Future Enhancements
 
 - [x] JWT authentication
 - [x] Role-based access control
-- [ ] Unit tests (Jest)
-- [ ] E2E tests (Playwright)
+- [x] Unit tests (Jest)
+- [x] E2E tests (Playwright)
 - [ ] Docker containerization
 - [ ] Frontend (React)
 - [ ] File upload for evidence photos
