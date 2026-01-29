@@ -27,7 +27,7 @@ export default defineConfig({
 
   // Playwright starts the server
   webServer: {
-    command: 'env $(cat .env | xargs) npm run dev',
+    command: 'env $(cat .env | xargs) node src/server.js',
     url: 'http://localhost:3000/api/health', // that indicates the server is up
     reuseExistingServer: !process.env.CI,
     timeout: 120000
