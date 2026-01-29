@@ -48,7 +48,7 @@ jobs:
           echo "JWT_SECRET=testsecret123" >> .env
 
       - name: Seed test database
-        run: psql postgresql://postgres:postgres@localhost:5432/argos_test -f datebase/seed_data.sql
+        run: psql postgresql://postgres:postgres@localhost:5432/argos_test -f database/seed_data.sql
 
       - name: Run Jest tests
         run: npm test
