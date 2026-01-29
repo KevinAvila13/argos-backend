@@ -5,26 +5,32 @@ export default defineConfig({
   timeout: 30000,
   retries: 1,
   workers: 1,
+
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report' }]
   ],
+
   use: {
     baseURL: 'http://localhost:3000',
     extraHTTPHeaders: {
       'Content-Type': 'application/json'
     }
   },
+
   projects: [
     {
       name: 'API Tests',
       testMatch: '**/*.spec.js'
     }
   ],
+
+  // Playwright starts the server
   webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:3000/api/health',
+    command: 'npm run dev',         
+    url: 'http://localhost:3000/api/health', // that indicates the server is up
     reuseExistingServer: !process.env.CI,
     timeout: 120000
   }
 });
+

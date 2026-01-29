@@ -1,4 +1,7 @@
 // Jest test setup file
+import { jest } from '@jest/globals';
+import jwt from 'jsonwebtoken';
+
 // Configure environment for testing
 
 // Set test environment variables
@@ -12,7 +15,6 @@ jest.setTimeout(10000);
 // Global test utilities
 global.testUtils = {
   generateTestToken: () => {
-    const jwt = require('jsonwebtoken');
     return jwt.sign(
       { userId: 1, username: 'testuser', role: 'technician' },
       process.env.JWT_SECRET,
@@ -21,7 +23,6 @@ global.testUtils = {
   },
 
   generateAdminToken: () => {
-    const jwt = require('jsonwebtoken');
     return jwt.sign(
       { userId: 6, username: 'admin', role: 'admin' },
       process.env.JWT_SECRET,
@@ -30,7 +31,6 @@ global.testUtils = {
   },
 
   generateCoordinatorToken: () => {
-    const jwt = require('jsonwebtoken');
     return jwt.sign(
       { userId: 4, username: 'coord01', role: 'coordinator' },
       process.env.JWT_SECRET,
